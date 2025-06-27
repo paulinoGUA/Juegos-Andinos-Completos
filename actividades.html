@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Juegos 2 y 3: Memoria y Línea de Tiempo</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
+    h1 { color: #333; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 600px; margin: auto; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .timeline { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 40px; }
+    .event { border: 1px solid #ccc; background: #fff; padding: 10px; border-radius: 6px; min-width: 120px; margin: 10px; cursor: grab; }
+    .slot { border: 2px dashed #888; padding: 20px; min-width: 140px; min-height: 60px; border-radius: 8px; }
+    .feedback { margin-top: 20px; font-weight: bold; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; border: none; background: #3498db; color: #fff; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <h1>📘 Juego 2: Memoria de Palabras Kichwa</h1>
+  <div class="grid" id="memoria"></div>
+  <button onclick="reiniciarMemoria()">Reiniciar Juego</button>
+  <div class="feedback" id="feedback-memoria"></div>
+
+  <hr />
+
+  <h1>📆 Juego 3: Línea de Tiempo Andina</h1>
+  <p>Arrastra cada festividad a su mes correspondiente.</p>
+  <div class="timeline" id="linea-tiempo">
+    <div class="slot" ondrop="soltar(event, 'junio')" ondragover="permitir(event)">Junio</div>
+    <div class="slot" ondrop="soltar(event, 'septiembre')" ondragover="permitir(event)">Septiembre</div>
+    <div class="slot" ondrop="soltar(event, 'diciembre')" ondragover="permitir(event)">Diciembre</div>
+  </div>
+  <div class="timeline">
+    <div class="event" draggable="true" ondragstart="arrastrar(event)" id="IntiRaymi">Inti Raymi</div>
+    <div class="event" draggable="true" ondragstart="arrastrar(event)" id="KollaRaymi">Kolla Raymi</div>
+    <div class="event" draggable="true" ondragstart="arrastrar(event)" id="KapakRaymi">Kapak Raymi</div>
+  </div>
+  <button onclick="reiniciarLinea()">Reiniciar Línea de Tiempo</button>
+  <div class="feedback" id="feedback-linea"></div>
+
+  <script>
+    // Juego 2: Memoria
+    const pares = [["Inti", "Sol"], ["Allpamama", "Madre Tierra"], ["Pinkullu", "Flauta ritual"], ["Chumpi", "Faja ancestral"]];
+    let tarjetas = [...pares, ...pares].sort(() => 0.5 - Math.random());
+    let primera = null, segunda = null, bloqueo = false, aciertos = 0;
+
+    function crearMemoria() {
+      const cont = document.getElementById("memoria");
+      cont.innerHTML = "";
+      tarjetas.forEach((t, i) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerText = "❓";
+        div.onclick = () => voltear(i, div);
+        cont.appendChild(div);
+      });
+    }
+
+    function voltear(i, div) {
+      if (bloqueo || div.innerText !== "❓") return;
+      div.innerText = tarjetas[i][0];
+      if (!primera) {
+        primera = { i, div };
+      } else {
+        segunda = { i, div };
+        bloqueo = true;
+        setTimeout(() => {
+          if (tarjetas[primera.i][1] === tarjetas[segunda.i][0] || tarjetas[primera.i][0] === tarjetas[segunda.i][1]) {
+            aciertos++;
+            if (aciertos === pares.length) {
+              document.getElementById("feedback-memoria").innerText = "✅ ¡Bien hecho! Completaste el juego.";
+            }
+          } else {
+            primera.div.innerText = "❓";
+            segunda.div.innerText = "❓";
+          }
+          primera = segunda = null;
+          bloqueo = false;
+        }, 800);
+      }
+    }
+
+    function reiniciarMemoria() {
+      tarjetas = [...pares, ...pares].sort(() => 0.5 - Math.random());
+      primera = segunda = null;
+      bloqueo = false;
+      aciertos = 0;
+      document.getElementById("feedback-memoria").innerText = "";
+      crearMemoria();
+    }
+
+    // Juego 3: Línea de tiempo
+    const respuestas = {
+      IntiRaymi: "junio",
+      KollaRaymi: "septiembre",
+      KapakRaymi: "diciembre"
+    };
+
+    function permitir(ev) {
+      ev.preventDefault();
+    }
+
+    function arrastrar(ev) {
+      ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function soltar(ev, mes) {
+      const id = ev.dataTransfer.getData("text");
+      const correcto = respuestas[id] === mes;
+      const nodo = document.getElementById(id);
+      ev.target.innerHTML = "";
+      ev.target.appendChild(nodo);
+      if (Object.values(respuestas).every(m => document.querySelector(`.slot:contains('${m}')`))) {
+        document.getElementById("feedback-linea").innerText = "✅ ¡Ubicaste correctamente las festividades!";
+      }
+    }
+
+    function reiniciarLinea() {
+      const contenedor = document.querySelectorAll(".slot");
+      contenedor.forEach(slot => slot.innerHTML = slot.innerText);
+      const eventos = Object.keys(respuestas);
+      eventos.forEach(id => {
+        const nodo = document.getElementById(id);
+        document.querySelector(".timeline:last-of-type").appendChild(nodo);
+      });
+      document.getElementById("feedback-linea").innerText = "";
+    }
+
+    crearMemoria();
+  </script>
+</body>
+</html>
